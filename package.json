@@ -39,10 +39,10 @@
     "style-loader": "^0.13.0",
     "supergroup-es6": "0.0.4",
     "url-loader": "^0.5.7",
+    "webpack-dev-middleware": "^1.2.0",
     "webpack": "^1.9.11"
   },
   "devDependencies": {
-    "webpack-dev-middleware": "^1.2.0",
     "webpack-hot-middleware": "^2.2.0"
   }
 }
