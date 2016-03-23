@@ -24,12 +24,10 @@
     "css-loader": "^0.21.0",
     "d3": "^3.5.6",
     "exports-loader": "^0.6.3",
-    "expose": "^0.1.4",
     "express": "^4.13.4",
     "extract-text-webpack-plugin": "^1.0.1",
     "file-loader": "^0.8.5",
     "imports-loader": "^0.6.5",
-    "jquery": "^2.2.2",
     "less": "^2.5.3",
     "less-loader": "^2.2.1",
     "lodash": "^3.10.1",
@@ -41,9 +39,10 @@
     "style-loader": "^0.13.0",
     "supergroup-es6": "0.0.4",
     "url-loader": "^0.5.7",
-    "webpack": "^1.9.11",
+    "webpack": "^1.9.11"
+  },
+  "devDependencies": {
     "webpack-dev-middleware": "^1.2.0",
     "webpack-hot-middleware": "^2.2.0"
-  },
-  "devDependencies": {}
+  }
 }
