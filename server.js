@@ -1,7 +1,6 @@
 "use strict";
 var NO_DB = true;
 var fs = require('fs');
-var pg = require('pg');
 var webpack = require('webpack');
 var webpackDevMiddleware = require('webpack-dev-middleware');
 var webpackHotMiddleware = require('webpack-hot-middleware');
@@ -50,42 +49,6 @@ app.use(function(req, res) {
 });
 
 
-function pgErr(msg, err, done, reject, client) {
-  console.log(msg, err.toString());
-  done();
-  client.end();
-  reject(err.error);
-}
-function getData(sql, params) {
-  console.log(sql, params && params.length && params || '');
-  var promise = new Promise(function(resolve, reject) {
-      pg.connect(process.env.DATABASE_URL, function(err, client, done) {
-        if (err) {
-          console.log("connection error", err);
-          reject(Error("connection failed", err));
-          return;
-        }
-        //console.log(sql, params);
-        var query = client.query(sql, params);
-        query.on('error', function(err) {
-          done();
-          pgErr('getData(' + sql + ': ' + (params&&params||'') + ')',
-                err, done, reject, client);
-          reject(Error("getData failed", err));
-        })
-        query.on('row', function(row, result) {
-          result.addRow(row);
-        });
-        query.on('end', function(result) {
-          //console.log(result.rows.length, 'from', sql);
-          //var ret = dqmunge.mungeDims(result.rows);
-          resolve(result.rows);
-          done();
-        });
-      });
-    });
-    return promise;
-}
 function condNames(rec) {
   let names = _.chain([ 'soc_concept_name', 
             'hglt_concept_name',
