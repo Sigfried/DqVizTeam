@@ -9,6 +9,7 @@ var _ = require('supergroup-es6').default; // why need default?
 var webpack = require('webpack');
 var config = require('./webpack.config');
 var compiler = webpack(config);
+var webpackDevMiddleware = require('webpack-dev-middleware');
 
 var app = new express();
 var port = process.env.PORT || 5000;
@@ -22,7 +23,6 @@ app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: config.output
 
 var isDevelopment = (process.env.NODE_ENV !== 'production');
 if (isDevelopment) {
-  var webpackDevMiddleware = require('webpack-dev-middleware');
   var webpackHotMiddleware = require('webpack-hot-middleware');
   app.use(webpackHotMiddleware(compiler));
 }
