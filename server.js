@@ -16,18 +16,6 @@ var port = process.env.PORT || 5000;
 app.use(compression())
 app.use(express.static('static/data/cms-synpuf'))
 
-let json = fs.readFileSync('./static/data/person_data_all.json');
-let data = JSON.parse(json).map(rec=>{
-  rec.start_date = new Date(rec.era_start_date);
-  rec.end_date = new Date(rec.era_end_date);
-  condNames(rec);
-  return rec;
-});
-
-let patients = _.supergroup(data, ['person_id','name_0']);
-
-let events = _.supergroup(data, ['name_0','person_id']);
-
 app.use(express.static('static'))
 //app.use('/data', express.static('static/data'));
 
@@ -48,31 +36,3 @@ app.use(function(req, res) {
   res.sendFile(__dirname + '/index.html');
 });
 
-
-function condNames(rec) {
-  let names = _.chain([ 'soc_concept_name', 
-            'hglt_concept_name',
-            'hlt_concept_name',
-            'pt_concept_name',
-            'concept_name'
-          ]).map(d=>rec[d]).compact().value();
-  names.forEach((name, i) => rec['name_' + i] = name);
-}
-
-function readJSONFile(filename, callback) {
-  fs.readFile(filename, function (err, data) {
-    if(err) {
-      callback(err);
-      return;
-    }
-    try {
-      callback(null, JSON.parse(data));
-    } catch(exception) {
-      callback(exception);
-    }
-  });
-}
-function daysDiff(d0, d1) {
-    var diff = new Date(+d1).setHours(12) - new Date(+d0).setHours(12);
-      return Math.round(diff/8.64e7);
-}
