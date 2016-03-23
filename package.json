@@ -1,0 +1,51 @@
+{
+  "name": "dqvizteam",
+  "version": "0.0.1",
+  "description": "Sandbox for data quality visualization experiments",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sigfried/dqvizteam"
+  },
+  "engines": {
+    "node": "5.0.0"
+  },
+  "license": "Apache-2.0",
+  "homepage": "http://infovizconsulting.com",
+  "dependencies": {
+    "babel-core": "^5.6.18",
+    "babel-loader": "^5.1.4",
+    "babel-plugin-react-transform": "^1.1.0",
+    "babel-polyfill": "^6.5.0",
+    "bootstrap": "^3.3.5",
+    "d3": "^3.5.6",
+    "d3kit-timeline": "^0.4.1",
+    "fixed-data-table": "^0.6.0",
+    "isomorphic-fetch": "^2.1.1",
+    "knockout-react": "0.0.1",
+    "labella": "^1.0.0",
+    "less": "^2.5.3",
+    "less-loader": "^2.2.1",
+    "lodash": "^3.10.1",
+    "normalizr": "^1.0.0",
+    "react": "^0.14.0-rc1",
+    "react-bootstrap": "^0.27.3",
+    "react-dom": "^0.14.0-rc1",
+    "style-loader": "^0.13.0",
+    "supergroup-es6": "0.0.4"
+  },
+  "devDependencies": {
+    "css-loader": "^0.21.0",
+    "webpack": "^1.9.11",
+    "webpack-dev-middleware": "^1.2.0",
+    "bootstrap-webpack": "0.0.5",
+    "webpack-hot-middleware": "^2.2.0",
+    "exports-loader": "^0.6.3",
+    "extract-text-webpack-plugin": "^1.0.1",
+    "file-loader": "^0.8.5",
+    "imports-loader": "^0.6.5",
+    "url-loader": "^0.5.7"
+  }
+}
