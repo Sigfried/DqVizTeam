@@ -24,6 +24,7 @@
     "css-loader": "^0.21.0",
     "d3": "^3.5.6",
     "exports-loader": "^0.6.3",
+    "expose-loader": "^0.7.1",
     "express": "^4.13.4",
     "extract-text-webpack-plugin": "^1.0.1",
     "file-loader": "^0.8.5",
@@ -39,8 +40,8 @@
     "style-loader": "^0.13.0",
     "supergroup-es6": "0.0.4",
     "url-loader": "^0.5.7",
-    "webpack-dev-middleware": "^1.2.0",
-    "webpack": "^1.9.11"
+    "webpack": "^1.9.11",
+    "webpack-dev-middleware": "^1.2.0"
   },
   "devDependencies": {
     "webpack-hot-middleware": "^2.2.0"
