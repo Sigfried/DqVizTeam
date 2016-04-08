@@ -9,19 +9,75 @@ import _ from 'supergroup-es6';
 require('expose?$!expose?jQuery!jquery');
 require("bootstrap-webpack");
 require("!style!css!less!./style.less");
-require("!style!css!./d3.parcoords.css");
-var ParallelCoordinatesComponent=require('react-parallel-coordinates');
+//require("!style!css!./lib/parallel-coordinates/style.css");
+require("!style!css!./lib/parallel-coordinates/d3.parcoords.css");
+require("./lib/sylvester.src.js");
+require("./lib/d3.svg.multibrush/d3.svg.multibrush.js");
+require("./lib/parallel-coordinates/d3.parcoords.js");
+//var ParallelCoordinatesComponent=require('react-parallel-coordinates');
 
+const files = [
+                'condition_occurrence',
+                'drug_exposure','visit_occurrence', 
+                //'observation', 'measurement', 'care_site', 'death', 
+                // 'procedure_occurrence','device_exposure',
+              ];
 
+function extract(rec, label, lineby) {
+  if (lineby === 'month') {
+    if (label === 'condition_occurrence') {
+      var field = 'CONDITION_START_DATE';
+    } else if (label === 'drug_exposure') {
+      field = 'DRUG_EXPOSURE_START_DATE';
+    } else if (label === 'device_exposure') {
+      field = 'DEVICE_EXPOSURE_START_DATE';
+    } else if (label === 'visit_occurrence') {
+      field = 'VISIT_START_DATE';
+    } else if (label === 'observation') {
+      field = 'OBSERVATION_DATE';
+    } else if (label === 'measurement') {
+      field = 'MEASUREMENT_DATE';
+    } else if (label === 'death') {
+      field = 'DEATH_DATE';
+    } else if (label === 'procedure_occurrence') {
+      field = 'PROCEDURE_DATE';
+    }
+    //return rec[field].replace(/(....)(..)(..)/,"$2/01/$1");
+    return new Date(rec[field].replace(/(....)(..)(..)/,"$1-$2-01"));
+  }
+}
+function dataSetup(selectedData, lineby='month') {
+  let prepd = [];
+  prepd = 
+    _.chain(selectedData)
+      .map((recs, label)=>{
+        return recs.map(rec=>{return {
+          month: extract(rec,label,lineby),
+          label: label
+        }});
+      })
+      .flatten()
+      .supergroup(['month','label'])
+      .value()
+  let pcrecs = prepd.map(month=>{
+    let pcrec={month:month.val}; 
+    //console.log(month.children[0].records);
+    month.children.forEach(lbl=>{
+      pcrec[lbl]=lbl.records.length
+    });
+    return pcrec
+  });
+  return pcrecs;
+}
 class App extends React.Component {
   constructor() {
     super();
-    this.state = {selected:{}};
+    this.state = {selected:{},
+                  processedData: [],
+                  dimensions: {},
+                 };
   }
   render() {
-    const files = ['condition_occurrence','drug_exposure','visit_occurrence', 
-                    'observation', 'measurement', 'care_site', 'death', 
-                    'procedure_occurrence','device_exposure', 'person',];
     window.state = this.state;
     return (
       <Row>
@@ -32,8 +88,9 @@ class App extends React.Component {
           <Row>
             <Col md={12}>
               <ParCoords 
-                selectedData={this.selectedData.bind(this)}
-                allDataReady={this.allDataReady.bind(this)}
+                data={this.state.processedData}
+                dimensions={this.state.dimensions}
+                width={900} height={400}
               />
             </Col>
           </Row>
@@ -49,11 +106,32 @@ class App extends React.Component {
       </Row>
     );
   }
+  componentDidMount() {
+    files.forEach(f => {
+      this.fetchData(f)
+      this.selectData(f, true);
+    });
+  }
   fetchData(label) {
     if (!this.state[lkey(label)]) {
       this.setState({[lkey(label)]: 'loading'});
       d3.csv(`CDM_${label.toUpperCase()}.csv`, data => {
+        //console.log('got data', data);
         this.setState({[lkey(label)]: data});
+        if (this.allDataReady()) {
+          let data = dataSetup(this.selectedData());
+          let dimensions = {
+            month: {
+              type:"date",
+            }
+          };
+          for (let label in this.selectedData()) {
+            dimensions[label] = {type:"number"};
+          }
+          let processedData = data.sort((a,b)=>b.month<a.month ? -1 : a.month<b.month ? 1 : 0);
+          console.log(processedData);
+          this.setState({processedData, dimensions});
+        }
       });
     }
   }
@@ -61,7 +139,7 @@ class App extends React.Component {
     return this.state[lkey(label)] && this.state[lkey(label)] !== "loading";
   }
   allDataReady() {
-    return _.every(this.selectedData(),
+    return !_.isEmpty(this.selectedData()) && _.every(this.selectedData(),
       (recs,label) => Array.isArray(recs));
   }
   dataFetched(label) {
@@ -111,11 +189,10 @@ class FileChooser extends React.Component {
                       dataReady(label) ? 'success' : dataFetched ? 'info' : 'primary'}
                     onClick={
                       ()=>{
-                        if (!dataFetched(label))
-                          fetchData(label);
+                        //if (!dataFetched(label)) fetchData(label);
                         filesShown[label] = !filesShown[label];
                         this.setState({filesShown});
-                        selectData(label, filesShown[label]);
+                        //selectData(label, filesShown[label]);
                       }}
                   >{label}</Button>
                   <CSVInfo 
@@ -152,85 +229,48 @@ function colStats(recs, col) {
   return {distinctVals: sg.length};
 }
 
-d3.select('#root').append('div').attr('class','parcoords').attr('id','pc')
-  .style('width','900px').style('height','250px');
-
 class ParCoords extends React.Component {
   render() {
     return (
       <div className="parcoords"
-           style={{width:900, height:250}} />
+           style={{width:this.props.width, height:this.props.height}}
+        />
     );
+        //<ParallelCoordinatesComponent dimensions={dimensions} data={data} height={400} width={900}
   }
   componentDidUpdate() {
-    const {selectedData, allDataReady} = this.props;
+    const {data, dimensions} = this.props;
+    if (!data && data.length)
+      return;
     let el = ReactDOM.findDOMNode(this);
-    el.innerHTML = '';
-    if (!allDataReady()) return;
-    console.log(selectedData());
-    let dimensions = {
-      month: {type:"string"}
-    };
-    for (let label in selectedData()) {
-      dimensions[label] = {type:"number"};
-    }
-    const data = this.dataSetup();
-    d3.parcoords()(el)
+    //el.innerHTML = '';
+    //window.pc = d3.parcoords()(el)
+    this.parcoords
                   .dimensions(dimensions)
                   .data(data)
                   .render()
+                  .reorderable()
+                  .brushMode("1D-axes") // enable brushing
+                  .on("brushend", d => { this.onBrushEnd(d) })
+                  .on("brush", d => { this.onBrush(d) })
+                  .on("highlight", d => { console.log('onHighlight') })
                   .createAxes();
+    //console.log(pc.dimensions());
+    //if ('month' in dimensions) pc.flipAxes(['month'])
   }
   componentDidMount() {
     let el = ReactDOM.findDOMNode(this);
-    this.parcoords = d3.parcoords()(el)
+    this.parcoords = d3.parcoords( {
+        //alpha: 0.2,
+        color: "#069",
+        shadowColor: "#f3f3f3", // does not exist in current PC version
+        width: this.props.width,
+        height: this.props.height,
+        dimensionTitleRotation: this.props.dimensionTitleRotation || -50,
+        margin: { top: 33, right: 0, bottom: 12, left: 0 },
+        nullValueSeparator: "bottom"
+      } )(el)
       //.data(data) .render() .createAxes();
-  }
-  extract(rec, label, lineby) {
-    if (lineby === 'month') {
-      if (label === 'condition_occurrence') {
-        var field = 'CONDITION_START_DATE';
-      } else if (label === 'drug_exposure') {
-        field = 'DRUG_EXPOSURE_START_DATE';
-      } else if (label === 'device_exposure') {
-        field = 'DEVICE_EXPOSURE_START_DATE';
-      } else if (label === 'visit_occurrence') {
-        field = 'VISIT_START_DATE';
-      } else if (label === 'observation') {
-        field = 'OBSERVATION_DATE';
-      } else if (label === 'measurement') {
-        field = 'MEASUREMENT_DATE';
-      } else if (label === 'death') {
-        field = 'DEATH_DATE';
-      } else if (label === 'procedure_occurrence') {
-        field = 'PROCEDURE_DATE';
-      }
-      return rec[field].substr(0,6);
-    }
-  }
-  dataSetup(lineby='month') {
-    const {selectedData} = this.props;
-    let prepd = [];
-    prepd = 
-      _.chain(selectedData())
-        .map((recs, label)=>{
-          return recs.map(rec=>{return {
-            month: this.extract(rec,label,lineby),
-            label: label
-          }});
-        })
-        .flatten()
-        .supergroup(['month','label'])
-        .value()
-    let pcrecs = prepd.map(month=>{
-      let pcrec={month:month.valueOf()}; 
-      //console.log(month.children[0].records);
-      month.children.forEach(lbl=>{
-        pcrec[lbl]=lbl.records.length
-      });
-      return pcrec
-    });
-    return pcrecs;
   }
 }
 

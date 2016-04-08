@@ -37,14 +37,14 @@
     "react": "^0.14.0-rc1",
     "react-bootstrap": "^0.27.3",
     "react-dom": "^0.14.0-rc1",
-    "react-parallel-coordinates": "^0.1.9",
     "style-loader": "^0.13.0",
-    "supergroup-es6": "0.0.4",
+    "supergroup-es6": "^0.1.3",
     "url-loader": "^0.5.7",
     "webpack": "^1.9.11",
     "webpack-dev-middleware": "^1.2.0",
     "webpack-hot-middleware": "^2.2.0"
   },
   "devDependencies": {
+    "supergroup-es6": "^0.1.2"
   }
 }
