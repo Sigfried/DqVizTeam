@@ -11,10 +11,10 @@ require("bootstrap-webpack");
 require("!style!css!less!./style.less");
 //require("!style!css!./lib/parallel-coordinates/style.css");
 require("!style!css!./lib/parallel-coordinates/d3.parcoords.css");
-require("./lib/sylvester.src.js");
-require("./lib/d3.svg.multibrush/d3.svg.multibrush.js");
-require("./lib/parallel-coordinates/d3.parcoords.js");
-//var ParallelCoordinatesComponent=require('react-parallel-coordinates');
+//require("./lib/sylvester.src.js");
+//require("./lib/d3.svg.multibrush/d3.svg.multibrush.js");
+//require("./lib/parallel-coordinates/d3.parcoords.js");
+var ParallelCoordinatesComponent=require('./react-parallel-coordinates/react-parallel-coordinates');
 
 const files = [
                 'condition_occurrence',
@@ -231,14 +231,20 @@ function colStats(recs, col) {
 
 class ParCoords extends React.Component {
   render() {
+    const {data, dimensions} = this.props;
+    if (!data || !data.length)
+      return <div/>;
     return (
       <div className="parcoords"
-           style={{width:this.props.width, height:this.props.height}}
-        />
+          style={{width:this.props.width, height:this.props.height}} >
+        <ParallelCoordinatesComponent 
+              dimensions={dimensions} data={data} 
+              height={400} width={900} />
+      </div>
     );
-        //<ParallelCoordinatesComponent dimensions={dimensions} data={data} height={400} width={900}
   }
   componentDidUpdate() {
+    return;
     const {data, dimensions} = this.props;
     if (!data && data.length)
       return;
@@ -249,6 +255,7 @@ class ParCoords extends React.Component {
                   .dimensions(dimensions)
                   .data(data)
                   .render()
+                  .shadows()
                   .reorderable()
                   .brushMode("1D-axes") // enable brushing
                   .on("brushend", d => { this.onBrushEnd(d) })
@@ -256,7 +263,7 @@ class ParCoords extends React.Component {
                   .on("highlight", d => { console.log('onHighlight') })
                   .createAxes();
     //console.log(pc.dimensions());
-    //if ('month' in dimensions) pc.flipAxes(['month'])
+    if ('month' in dimensions) pc.flipAxes(['month'])
   }
   componentDidMount() {
     let el = ReactDOM.findDOMNode(this);
