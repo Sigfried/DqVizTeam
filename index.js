@@ -16,11 +16,12 @@ require("!style!css!./lib/parallel-coordinates/d3.parcoords.css");
 //require("./lib/parallel-coordinates/d3.parcoords.js");
 var ParallelCoordinatesComponent=require('./react-parallel-coordinates/react-parallel-coordinates');
 
-const files = [
+const fileLabels = [
                 'condition_occurrence',
                 'drug_exposure','visit_occurrence', 
-                //'observation', 'measurement', 'care_site', 'death', 
-                // 'procedure_occurrence','device_exposure',
+                'observation', 'measurement', //'care_site', 
+                'death', 
+                 'procedure_occurrence','device_exposure',
               ];
 
 function extract(rec, label, lineby) {
@@ -51,6 +52,7 @@ function dataSetup(selectedData, lineby='month') {
   prepd = 
     _.chain(selectedData)
       .map((recs, label)=>{
+        //if (!Array.isArray(recs)) return [];
         return recs.map(rec=>{return {
           month: extract(rec,label,lineby),
           label: label
@@ -95,7 +97,7 @@ class App extends React.Component {
             </Col>
           </Row>
           <FileChooser 
-              files={files}
+              fileLabels={fileLabels}
               fetchData={this.fetchData.bind(this)}
               getData={this.getData.bind(this)}
               dataReady={this.dataReady.bind(this)}
@@ -107,9 +109,9 @@ class App extends React.Component {
     );
   }
   componentDidMount() {
-    files.forEach(f => {
-      this.fetchData(f)
-      this.selectData(f, true);
+    fileLabels.forEach(label => {
+      this.fetchData(label)
+      this.selectData(label, true);
     });
   }
   fetchData(label) {
@@ -119,7 +121,7 @@ class App extends React.Component {
         //console.log('got data', data);
         this.setState({[lkey(label)]: data});
         if (this.allDataReady()) {
-          let data = dataSetup(this.selectedData());
+          let processedData = dataSetup(this.selectedData());
           let dimensions = {
             month: {
               type:"date",
@@ -128,8 +130,8 @@ class App extends React.Component {
           for (let label in this.selectedData()) {
             dimensions[label] = {type:"number"};
           }
-          let processedData = data.sort((a,b)=>b.month<a.month ? -1 : a.month<b.month ? 1 : 0);
-          console.log(processedData);
+          processedData = processedData.sort((a,b)=>b.month<a.month ? -1 : a.month<b.month ? 1 : 0);
+          //console.log(processedData);
           this.setState({processedData, dimensions});
         }
       });
@@ -176,17 +178,23 @@ class FileChooser extends React.Component {
   }
   render() {
     let {filesShown} = this.state;
-    let {files, fetchData, getData, dataReady, dataFetched, selectData} = this.props;
+    let {fileLabels, fetchData, getData, dataReady, dataFetched, selectData} = this.props;
+    //console.log('filechooser render');
+    //console.log(fileLabels.map(label=>dataReady(label)).join(','));
     const groupsOf4 = 
-      _.chunk(files, 4)
+      _.chunk(fileLabels, 4)
        .map((grp,i) => 
             <Row key={i}>
               {grp.map(label=>
                 <Col md={3} className="text-center" key={label}>
                   <Button 
                     bsStyle={
-                      !filesShown[label] ? 'default' :
-                      dataReady(label) ? 'success' : dataFetched ? 'info' : 'primary'}
+                      //!filesShown[label] ? 'default' :
+                      dataReady(label) ? 
+                        'success' : dataFetched(label) ? 
+                                      'default' : 'primary'
+                                      //'info' : 'primary'
+                    }
                     onClick={
                       ()=>{
                         //if (!dataFetched(label)) fetchData(label);
@@ -232,6 +240,7 @@ function colStats(recs, col) {
 class ParCoords extends React.Component {
   render() {
     const {data, dimensions} = this.props;
+    console.log(data, dimensions);
     if (!data || !data.length)
       return <div/>;
     return (
@@ -239,45 +248,9 @@ class ParCoords extends React.Component {
           style={{width:this.props.width, height:this.props.height}} >
         <ParallelCoordinatesComponent 
               dimensions={dimensions} data={data} 
-              height={400} width={900} />
+              height={400} width={Object.keys(dimensions).length * 100} />
       </div>
     );
-  }
-  componentDidUpdate() {
-    return;
-    const {data, dimensions} = this.props;
-    if (!data && data.length)
-      return;
-    let el = ReactDOM.findDOMNode(this);
-    //el.innerHTML = '';
-    //window.pc = d3.parcoords()(el)
-    this.parcoords
-                  .dimensions(dimensions)
-                  .data(data)
-                  .render()
-                  .shadows()
-                  .reorderable()
-                  .brushMode("1D-axes") // enable brushing
-                  .on("brushend", d => { this.onBrushEnd(d) })
-                  .on("brush", d => { this.onBrush(d) })
-                  .on("highlight", d => { console.log('onHighlight') })
-                  .createAxes();
-    //console.log(pc.dimensions());
-    if ('month' in dimensions) pc.flipAxes(['month'])
-  }
-  componentDidMount() {
-    let el = ReactDOM.findDOMNode(this);
-    this.parcoords = d3.parcoords( {
-        //alpha: 0.2,
-        color: "#069",
-        shadowColor: "#f3f3f3", // does not exist in current PC version
-        width: this.props.width,
-        height: this.props.height,
-        dimensionTitleRotation: this.props.dimensionTitleRotation || -50,
-        margin: { top: 33, right: 0, bottom: 12, left: 0 },
-        nullValueSeparator: "bottom"
-      } )(el)
-      //.data(data) .render() .createAxes();
   }
 }
 

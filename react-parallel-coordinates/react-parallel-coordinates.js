@@ -69,6 +69,7 @@ var ParallelCoordinatesComponent = React.createClass ({
 			////////////.tickValues([0.00,0.25,0.50,0.75,1.00]) //[0,0.25,0.5,0.75,1.0]
 			////////////.tickFormat('')
 			.createAxes()
+      .flip(['month'])
 			.reorderable()
 			.brushMode("1D-axes") // enable brushing
 			.on("brushend", function (d) { self.onBrushEnd(d) })
@@ -76,6 +77,20 @@ var ParallelCoordinatesComponent = React.createClass ({
 			//////////.on("resize", function (d) { console.log('onResize') })
 			//////////.on("highlight", function (d) { console.log('onHighlight') })
 			//////////.on("render", function (d) { console.log('onRender') })
+    /*
+    setTimeout(()=> 
+               {
+                this.pc.flip(['month']);
+                this.pc.render();
+                this.pc.createAxes()
+                    .reorderable()
+                    .brushMode("1D-axes") // enable brushing
+                    .on("brushend", function (d) { self.onBrushEnd(d) })
+                    .on("brush", function (d) { self.onBrush(d) })
+               }, 
+               1000);
+    */
+			
 
 		if (this.props.initialBrushExtents) {// set initial brushes
 			this.pc.brushExtents(this.props.initialBrushExtents)
@@ -107,7 +122,9 @@ var ParallelCoordinatesComponent = React.createClass ({
 			.brushExtents(brushExtents)
 			.on("brushend", function (d) { self.onBrushEnd(d) })
 			.on("brush", function (d) { self.onBrush(d) })
+      .flip(['month'])
 			
+    console.log('been here');
 		if (this.props.dataHighlighted !== undefined && this.props.dataHighlighted.length > 0) {
 			this.pc = this.pc.highlight(this.props.dataHighlighted)
 		}
