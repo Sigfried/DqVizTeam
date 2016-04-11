@@ -17,11 +17,13 @@ require("!style!css!./lib/parallel-coordinates/d3.parcoords.css");
 var ParallelCoordinatesComponent=require('./react-parallel-coordinates/react-parallel-coordinates');
 
 const fileLabels = [
+                'visit_occurrence', 
+                //'patient_count',
                 'condition_occurrence',
-                'drug_exposure','visit_occurrence', 
+                'drug_exposure',
                 'observation', 'measurement', //'care_site', 
-                'death', 
-                 'procedure_occurrence','device_exposure',
+                 'procedure_occurrence',
+                 //'device_exposure', 'death', 
               ];
 
 function extract(rec, label, lineby) {
@@ -59,16 +61,20 @@ function dataSetup(selectedData, lineby='month') {
         }});
       })
       .flatten()
-      .supergroup(['month','label'])
       .value()
-  let pcrecs = prepd.map(month=>{
-    let pcrec={month:month.val}; 
-    //console.log(month.children[0].records);
-    month.children.forEach(lbl=>{
-      pcrec[lbl]=lbl.records.length
+  prepd.push(... 
+    _.supergroup(selectedData.visit_occurrence,
+     [d=>new Date(d.VISIT_START_DATE.replace(/(....)(..)(..)/,"$1-$2-01")),
+       'PERSON_ID'])
+     .leafNodes().map(d=>{return {label:'patient_count',month:d.parentNode.val}}));
+  let pcrecs = _.supergroup(prepd, ['month','label'])
+    .map(month=>{
+      let pcrec={month:month.val}; 
+      month.children.forEach(lbl=>{
+        pcrec[lbl]=lbl.records.length
+      });
+      return pcrec
     });
-    return pcrec
-  });
   return pcrecs;
 }
 class App extends React.Component {
@@ -125,6 +131,8 @@ class App extends React.Component {
           let dimensions = {
             month: {
               type:"date",
+            }, patient_count: {
+              type:"number",
             }
           };
           for (let label in this.selectedData()) {
