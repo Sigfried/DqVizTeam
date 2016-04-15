@@ -63,13 +63,17 @@ var ParallelCoordinatesComponent = React.createClass ({
 			.dimensions(this.props.dimensions)
 			// show/hide dimensions [0,1,2,3,4,5]
 			//.dimensionTitles(dimensionTitles)
+      //* couldn't get this to work (sigfried)
+      .bundlingStrength(this.props.bundlingStrength || 0)
+      .smoothness(this.props.smoothness || 0)
+      .bundleDimension(this.props.bundleDimension)
 			.render()
 			.shadows()
 			////////////.commonScale(false, "number", [0,1])
 			////////////.tickValues([0.00,0.25,0.50,0.75,1.00]) //[0,0.25,0.5,0.75,1.0]
 			////////////.tickFormat('')
 			.createAxes()
-      .flip(['month'])
+      //.flip(['month'])
 			.reorderable()
 			.brushMode("1D-axes") // enable brushing
 			.on("brushend", function (d) { self.onBrushEnd(d) })

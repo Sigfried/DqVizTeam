@@ -54,7 +54,10 @@ function dataSetup(selectedData, lineby='month') {
   prepd = 
     _.chain(selectedData)
       .map((recs, label)=>{
-        //if (!Array.isArray(recs)) return [];
+        if (label === "condition_occurrence")
+          recs = recs.filter(
+            d => !d.CONDITION_START_DATE.match(/^20081/) ||
+                 d.PERSON_ID % 2);
         return recs.map(rec=>{return {
           month: extract(rec,label,lineby),
           label: label
@@ -99,7 +102,17 @@ class App extends React.Component {
                 data={this.state.processedData}
                 dimensions={this.state.dimensions}
                 width={900} height={400}
+                onBrushEndData={this.onBrushEndData.bind(this)}
               />
+            </Col>
+          </Row>
+          <Row>
+            <Col md={12}>
+              <ul style={{maxHeight:170, width:'100%', overflow:'auto',
+                          border:'1px solid brown',
+                        }} >
+                {this.state.brushedData}
+              </ul>
             </Col>
           </Row>
           <FileChooser 
@@ -120,6 +133,24 @@ class App extends React.Component {
       this.selectData(label, true);
     });
   }
+  onBrushEndData(data) {
+    var fmt = d3.time.format("%Y-%m-%d");
+    var fields = ['visit_occurrence', 
+                  'patient_count',
+                  'condition_occurrence',
+                  'drug_exposure',
+                  'observation', 'measurement',
+                  'procedure_occurrence'];
+    console.log(data);
+    let brushedData = data.map((d,i)=>
+        <li key={i}>
+          {fmt(d.month)}
+          <ul><li>
+            {fields.map(f=>`${f}: ${d[f]}`).join(', ')}
+          </li></ul>
+        </li>)
+    this.setState({brushedData});
+  }
   fetchData(label) {
     if (!this.state[lkey(label)]) {
       this.setState({[lkey(label)]: 'loading'});
@@ -130,7 +161,7 @@ class App extends React.Component {
           let processedData = dataSetup(this.selectedData());
           let dimensions = {
             month: {
-              type:"date",
+              //type:"date",
             }, patient_count: {
               type:"number",
             }
@@ -247,8 +278,11 @@ function colStats(recs, col) {
 
 class ParCoords extends React.Component {
   render() {
-    const {data, dimensions} = this.props;
-    console.log(data, dimensions);
+    const {data, dimensions, onBrushEndData} = this.props;
+    let onBrush = function(d) {};
+    let onBrushEnd = function(d) {
+      console.log(d)};
+    //console.log(data, dimensions);
     if (!data || !data.length)
       return <div/>;
     return (
@@ -256,7 +290,14 @@ class ParCoords extends React.Component {
           style={{width:this.props.width, height:this.props.height}} >
         <ParallelCoordinatesComponent 
               dimensions={dimensions} data={data} 
-              height={400} width={Object.keys(dimensions).length * 100} />
+              height={400} width={Object.keys(dimensions).length * 100} 
+              bundlingStrength={0.2}
+              smoothness={0.15}
+              bundleDimension={'month'}
+              onBrush_extents={onBrush} 
+              onBrushEnd_extents={onBrushEnd} 
+              onBrushEnd_data={onBrushEndData}
+              />
       </div>
     );
   }
