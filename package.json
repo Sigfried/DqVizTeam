@@ -10,7 +10,8 @@
     "url": "https://github.com/Sigfried/dqvizteam"
   },
   "engines": {
-    "node": "5.0.0"
+    "node": "5.0.0",
+    "npm": "3.7.2"
   },
   "license": "Apache-2.0",
   "homepage": "http://infovizconsulting.com",
