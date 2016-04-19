@@ -126,7 +126,7 @@ var ParallelCoordinatesComponent = React.createClass ({
 			.brushExtents(brushExtents)
 			.on("brushend", function (d) { self.onBrushEnd(d) })
 			.on("brush", function (d) { self.onBrush(d) })
-      .flip(['month'])
+      //.flip(['month'])
 			
     console.log('been here');
 		if (this.props.dataHighlighted !== undefined && this.props.dataHighlighted.length > 0) {

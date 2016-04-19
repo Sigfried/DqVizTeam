@@ -16,50 +16,55 @@ require("!style!css!./lib/parallel-coordinates/d3.parcoords.css");
 //require("./lib/parallel-coordinates/d3.parcoords.js");
 var ParallelCoordinatesComponent=require('./react-parallel-coordinates/react-parallel-coordinates');
 
-const fileLabels = [
+let FILELABELS = [
                 'visit_occurrence', 
-                //'patient_count',
                 'condition_occurrence',
                 'drug_exposure',
                 'observation', 'measurement', //'care_site', 
                  'procedure_occurrence',
                  //'device_exposure', 'death', 
               ];
-
-function extract(rec, label, lineby) {
-  if (lineby === 'month') {
-    if (label === 'condition_occurrence') {
-      var field = 'CONDITION_START_DATE';
-    } else if (label === 'drug_exposure') {
-      field = 'DRUG_EXPOSURE_START_DATE';
-    } else if (label === 'device_exposure') {
-      field = 'DEVICE_EXPOSURE_START_DATE';
-    } else if (label === 'visit_occurrence') {
-      field = 'VISIT_START_DATE';
-    } else if (label === 'observation') {
-      field = 'OBSERVATION_DATE';
-    } else if (label === 'measurement') {
-      field = 'MEASUREMENT_DATE';
-    } else if (label === 'death') {
-      field = 'DEATH_DATE';
-    } else if (label === 'procedure_occurrence') {
-      field = 'PROCEDURE_DATE';
-    }
-    //return rec[field].replace(/(....)(..)(..)/,"$2/01/$1");
-    return new Date(rec[field].replace(/(....)(..)(..)/,"$1-$2-01"));
-  }
+//const LINEBY = 'month';
+const LINEBY = 'age';
+if (LINEBY === 'age') {
+  FILELABELS.unshift('person');
 }
-function dataSetup(selectedData, lineby='month') {
+
+function extractDate(rec, label) {
+  if (label === 'condition_occurrence') {
+    var field = 'CONDITION_START_DATE';
+  } else if (label === 'drug_exposure') {
+    field = 'DRUG_EXPOSURE_START_DATE';
+  } else if (label === 'device_exposure') {
+    field = 'DEVICE_EXPOSURE_START_DATE';
+  } else if (label === 'visit_occurrence') {
+    field = 'VISIT_START_DATE';
+  } else if (label === 'observation') {
+    field = 'OBSERVATION_DATE';
+  } else if (label === 'measurement') {
+    field = 'MEASUREMENT_DATE';
+  } else if (label === 'death') {
+    field = 'DEATH_DATE';
+  } else if (label === 'procedure_occurrence') {
+    field = 'PROCEDURE_DATE';
+  }
+  //return rec[field].replace(/(....)(..)(..)/,"$2/01/$1");
+  return new Date(rec[field].replace(/(....)(..)(..)/,"$1-$2-01"));
+}
+function dataSetup(selectedData) {
+  if (LINEBY === 'age')
+    return dataSetupAge(selectedData);
   let prepd = [];
   prepd = 
     _.chain(selectedData)
       .map((recs, label)=>{
-        if (label === "condition_occurrence")
+        if (label === "condition_occurrence") // manufacture data quality problem
+                                              // delete conditions in last quarter 2008
           recs = recs.filter(
             d => !d.CONDITION_START_DATE.match(/^20081/) ||
                  d.PERSON_ID % 2);
         return recs.map(rec=>{return {
-          month: extract(rec,label,lineby),
+          month: extractDate(rec,label),
           label: label
         }});
       })
@@ -70,10 +75,58 @@ function dataSetup(selectedData, lineby='month') {
      [d=>new Date(d.VISIT_START_DATE.replace(/(....)(..)(..)/,"$1-$2-01")),
        'PERSON_ID'])
      .leafNodes().map(d=>{return {label:'patient_count',month:d.parentNode.val}}));
+
   let pcrecs = _.supergroup(prepd, ['month','label'])
     .map(month=>{
       let pcrec={month:month.val}; 
       month.children.forEach(lbl=>{
+        pcrec[lbl]=lbl.records.length
+      });
+      return pcrec
+    });
+  return pcrecs;
+}
+function dataSetupAge(selectedData) {
+  // calculate age based on date of first visit
+  let personVisits = _.supergroup(selectedData.visit_occurrence, 'PERSON_ID');
+  let ages = {};
+  selectedData.person.forEach(p => {
+    let person = personVisits.lookup(p.PERSON_ID);
+    if (person) {
+      let firstVisit = new Date(
+            _.chain(person.records).pluck('VISIT_START_DATE')
+                .map(d=>d.replace(/(....)(..)(..)/,"$1-$2-$3"))
+                .sort().first().value());
+      let age = Math.floor(
+        (firstVisit - 
+        new Date(`${p.YEAR_OF_BIRTH}-${p.MONTH_OF_BIRTH}-${p.DAY_OF_BIRTH}`))
+        / (1000 * 60 * 60 * 24 * 365.25));
+      ages[p.PERSON_ID] = age;
+      p.age = age;
+    }
+  });
+
+  let prepd = [];
+  prepd = 
+    _.chain(selectedData)
+      .map((recs, label)=>{
+          return _.chain(recs).map(rec=>{
+                      if (typeof ages[rec.PERSON_ID] !== "undefined") {
+                        return { age: ages[rec.PERSON_ID], label: label };
+                      }
+                   }).compact().value();
+      })
+      .flatten()
+      .value()
+  prepd.push(... 
+    _.supergroup(selectedData.person, ['age', 'PERSON_ID'])
+     .leafNodes()
+     .map(d=>{return {label:'patient_count',age:d.parentNode.val}}));
+
+  let pcrecs = _.supergroup(prepd.filter(d=>typeof d.age !== "undefined"), ['age','label'])
+    .map(age=>{
+      let pcrec={age:age.val}; 
+      age.children.forEach(lbl=>{
         pcrec[lbl]=lbl.records.length
       });
       return pcrec
@@ -116,7 +169,7 @@ class App extends React.Component {
             </Col>
           </Row>
           <FileChooser 
-              fileLabels={fileLabels}
+              fileLabels={FILELABELS}
               fetchData={this.fetchData.bind(this)}
               getData={this.getData.bind(this)}
               dataReady={this.dataReady.bind(this)}
@@ -128,7 +181,7 @@ class App extends React.Component {
     );
   }
   componentDidMount() {
-    fileLabels.forEach(label => {
+    FILELABELS.forEach(label => {
       this.fetchData(label)
       this.selectData(label, true);
     });
@@ -159,18 +212,17 @@ class App extends React.Component {
         this.setState({[lkey(label)]: data});
         if (this.allDataReady()) {
           let processedData = dataSetup(this.selectedData());
-          let dimensions = {
-            month: {
-              //type:"date",
-            }, patient_count: {
-              type:"number",
-            }
-          };
+          let dimensions = {};
+          if (LINEBY === 'month')
+            dimensions[LINEBY] = { type:"date"};
+          else
+            dimensions[LINEBY] = { type:"number"};
+          dimensions.patient_count = { type:"number", };
           for (let label in this.selectedData()) {
-            dimensions[label] = {type:"number"};
+            if (label !== 'person') // no person dimension
+              dimensions[label] = {type:"number"};
           }
-          processedData = processedData.sort((a,b)=>b.month<a.month ? -1 : a.month<b.month ? 1 : 0);
-          //console.log(processedData);
+          //processedData = processedData.sort((a,b)=>b.month<a.month ? -1 : a.month<b.month ? 1 : 0);
           this.setState({processedData, dimensions});
         }
       });
@@ -251,8 +303,6 @@ class FileChooser extends React.Component {
     return <div>{groupsOf4}</div>;
   }
 }
-class LoaderButton extends React.Component {
-}
 class CSVInfo extends React.Component {
   constructor() {
     super();
@@ -293,7 +343,7 @@ class ParCoords extends React.Component {
               height={400} width={Object.keys(dimensions).length * 100} 
               bundlingStrength={0.2}
               smoothness={0.15}
-              bundleDimension={'month'}
+              bundleDimension={LINEBY}
               onBrush_extents={onBrush} 
               onBrushEnd_extents={onBrushEnd} 
               onBrushEnd_data={onBrushEndData}
