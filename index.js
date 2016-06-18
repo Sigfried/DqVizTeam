@@ -24,8 +24,8 @@ let FILELABELS = [
                  'procedure_occurrence',
                  //'device_exposure', 'death', 
               ];
-//const LINEBY = 'month';
-const LINEBY = 'age';
+const LINEBY = 'month';
+//const LINEBY = 'age';
 if (LINEBY === 'age') {
   FILELABELS.unshift('person');
 }
