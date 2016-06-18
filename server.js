@@ -13,11 +13,6 @@ var webpackDevMiddleware = require('webpack-dev-middleware');
 
 var app = new express();
 var port = process.env.PORT || 5000;
-app.use(compression())
-app.use(express.static('static/data/cms-synpuf'))
-
-app.use(express.static('static'))
-//app.use('/data', express.static('static/data'));
 
 app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: config.output.publicPath }));
 
@@ -27,6 +22,11 @@ if (isDevelopment) {
   app.use(webpackHotMiddleware(compiler));
 }
 
+app.use(compression())
+app.use(express.static('static/data/cms-synpuf'))
+
+app.use(express.static('static'))
+//app.use('/data', express.static('static/data'));
 app.listen(port, function(error) {
   if (error) {
     console.error(error);
