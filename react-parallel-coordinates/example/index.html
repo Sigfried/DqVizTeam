@@ -1,0 +1,21 @@
+<html>
+  <head>
+    <title>Parallel Coordinates wrapped inside a React 0.14.0 Component</title>
+	<meta http-equiv="X-UA-Compatible" content="IE=9">
+	<style type=text/css>
+	.parcoords .axis .tick text {
+	  pointer-events: none;
+	  opacity: 0.0;
+	}
+	.parcoords .axis:hover .tick text {
+	  --stroke: #000;
+	  --fill: #000;
+	  pointer-events: none;
+	  opacity: 1.0;
+	  text-shadow: 1px 1px 3px #ccc;
+	}
+	</style>
+  </head>
+  <div class="mygraph"></div>
+  <script src="/scripts/bundle.js"></script>
+</html>
