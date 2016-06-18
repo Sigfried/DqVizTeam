@@ -4,7 +4,8 @@ import ReactDOM, { render } from 'react-dom';
 import { Grid, Row, Col, Glyphicon, Button, Panel, ButtonToolbar, 
          Input, Tabs, Tab } from 'react-bootstrap';
 import d3 from 'd3';
-import _ from 'supergroup-es6';
+//import _ from 'supergroup-es6';
+import _ from 'supergroup';
 //import _ from './node_modules/supergroup-es6/src/es6.supergroup';
 require('expose?$!expose?jQuery!jquery');
 require("bootstrap-webpack");
@@ -74,7 +75,7 @@ function dataSetup(selectedData) {
     _.supergroup(selectedData.visit_occurrence,
      [d=>new Date(d.VISIT_START_DATE.replace(/(....)(..)(..)/,"$1-$2-01")),
        'PERSON_ID'])
-     .leafNodes().map(d=>{return {label:'patient_count',month:d.parentNode.val}}));
+     .leafNodes().map(d=>{return {label:'patient_count',month:d.parent.val}}));
 
   let pcrecs = _.supergroup(prepd, ['month','label'])
     .map(month=>{
@@ -94,7 +95,7 @@ function dataSetupAge(selectedData) {
     let person = personVisits.lookup(p.PERSON_ID);
     if (person) {
       let firstVisit = new Date(
-            _.chain(person.records).pluck('VISIT_START_DATE')
+            _.chain(person.records).map('VISIT_START_DATE')
                 .map(d=>d.replace(/(....)(..)(..)/,"$1-$2-$3"))
                 .sort().first().value());
       let age = Math.floor(
@@ -121,7 +122,7 @@ function dataSetupAge(selectedData) {
   prepd.push(... 
     _.supergroup(selectedData.person, ['age', 'PERSON_ID'])
      .leafNodes()
-     .map(d=>{return {label:'patient_count',age:d.parentNode.val}}));
+     .map(d=>{return {label:'patient_count',age:d.parent.val}}));
 
   let pcrecs = _.supergroup(prepd.filter(d=>typeof d.age !== "undefined"), ['age','label'])
     .map(age=>{
@@ -194,7 +195,6 @@ class App extends React.Component {
                   'drug_exposure',
                   'observation', 'measurement',
                   'procedure_occurrence'];
-    console.log(data);
     let brushedData = data.map((d,i)=>
         <li key={i}>
           {fmt(d.month)}
@@ -208,7 +208,6 @@ class App extends React.Component {
     if (!this.state[lkey(label)]) {
       this.setState({[lkey(label)]: 'loading'});
       d3.csv(`CDM_${label.toUpperCase()}.csv`, data => {
-        //console.log('got data', data);
         this.setState({[lkey(label)]: data});
         if (this.allDataReady()) {
           let processedData = dataSetup(this.selectedData());
@@ -232,8 +231,7 @@ class App extends React.Component {
     return this.state[lkey(label)] && this.state[lkey(label)] !== "loading";
   }
   allDataReady() {
-    return !_.isEmpty(this.selectedData()) && _.every(this.selectedData(),
-      (recs,label) => Array.isArray(recs));
+    return !_.isEmpty(this.selectedData()) && _.every(this.selectedData(), (recs,label) => Array.isArray(recs));
   }
   dataFetched(label) {
     return !!this.state[lkey(label)] || this.state[lkey(label)] === "loading";
@@ -254,7 +252,7 @@ class App extends React.Component {
       _.chain(this.state.selected)
        .keys()
        .map(label=>[label,this.state[lkey(label)]])
-       .object().value());
+       .fromPairs().value());
   }
 }
 function lkey(label) {
@@ -270,8 +268,6 @@ class FileChooser extends React.Component {
   render() {
     let {filesShown} = this.state;
     let {fileLabels, fetchData, getData, dataReady, dataFetched, selectData} = this.props;
-    //console.log('filechooser render');
-    //console.log(fileLabels.map(label=>dataReady(label)).join(','));
     const groupsOf4 = 
       _.chunk(fileLabels, 4)
        .map((grp,i) => 
@@ -331,8 +327,6 @@ class ParCoords extends React.Component {
     const {data, dimensions, onBrushEndData} = this.props;
     let onBrush = function(d) {};
     let onBrushEnd = function(d) {
-      console.log(d)};
-    //console.log(data, dimensions);
     if (!data || !data.length)
       return <div/>;
     return (
