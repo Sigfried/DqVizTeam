@@ -25,8 +25,8 @@ let FILELABELS = [
                  'procedure_occurrence',
                  //'device_exposure', 'death', 
               ];
-const LINEBY = 'month';
-//const LINEBY = 'age';
+//const LINEBY = 'month';
+const LINEBY = 'age';
 if (LINEBY === 'age') {
   FILELABELS.unshift('person');
 }
@@ -75,15 +75,16 @@ function dataSetup(selectedData) {
     _.supergroup(selectedData.visit_occurrence,
      [d=>new Date(d.VISIT_START_DATE.replace(/(....)(..)(..)/,"$1-$2-01")),
        'PERSON_ID'])
-     .leafNodes().map(d=>{return {label:'patient_count',month:d.parent.val}}));
+     .leafNodes().map(d=>{return {label:'patient_count',month:new Date(d.parent)}}));
 
   let pcrecs = _.supergroup(prepd, ['month','label'])
     .map(month=>{
-      let pcrec={month:month.val}; 
+      //let pcrec={month:month.val}; // supergroup-es6
+      let pcrec={month:new Date(month)}; 
       month.children.forEach(lbl=>{
         pcrec[lbl]=lbl.records.length
       });
-      return pcrec
+      return pcrec;
     });
   return pcrecs;
 }
@@ -122,11 +123,11 @@ function dataSetupAge(selectedData) {
   prepd.push(... 
     _.supergroup(selectedData.person, ['age', 'PERSON_ID'])
      .leafNodes()
-     .map(d=>{return {label:'patient_count',age:d.parent.val}}));
+     .map(d=>{return {label:'patient_count',age:d.parent.valueOf()}}));
 
   let pcrecs = _.supergroup(prepd.filter(d=>typeof d.age !== "undefined"), ['age','label'])
     .map(age=>{
-      let pcrec={age:age.val}; 
+      let pcrec={age:age.valueOf()}; 
       age.children.forEach(lbl=>{
         pcrec[lbl]=lbl.records.length
       });
@@ -197,7 +198,7 @@ class App extends React.Component {
                   'procedure_occurrence'];
     let brushedData = data.map((d,i)=>
         <li key={i}>
-          {fmt(d.month)}
+          {LINEBY === 'month' ? fmt(d.month) : d.age}
           <ul><li>
             {fields.map(f=>`${f}: ${d[f]}`).join(', ')}
           </li></ul>
@@ -326,7 +327,7 @@ class ParCoords extends React.Component {
   render() {
     const {data, dimensions, onBrushEndData} = this.props;
     let onBrush = function(d) {};
-    let onBrushEnd = function(d) {
+    let onBrushEnd = function(d) {}
     if (!data || !data.length)
       return <div/>;
     return (
